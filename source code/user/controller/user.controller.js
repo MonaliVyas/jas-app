@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const Joi = require('joi');
-const User = require('../models/user.model');
+const User = require('../model/user.model');
 let DOB = new Date();
 DOB.setFullYear(DOB.getFullYear() - 16);
 //db insert user
