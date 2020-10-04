@@ -23,11 +23,12 @@ const schema = Joi.object().keys({
 		'date.max': `User must be 16 years old or above`,
 		'date.required': `Date of birth is required`
 	}),
-    Email: Joi.string().required().regex(/^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$/).messages({
+    Email: Joi.string().regex(/^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$/).max(255).required().messages({
         'string.pattern.base': `Invalid email address`,
+        'string.max': `Email must be less than or equal to 255 characters long`,
         'string.required': `Email address is required`
 	}),
-    Mobile: Joi.string().required().regex(/^[0-9]{10,10}$/).messages({
+    Mobile: Joi.string().regex(/^[0-9]{10,10}$/).required().messages({
         'string.pattern.base': `Invalid mobile number`,
         'string.required': `Mobile number is required`
 	}),
