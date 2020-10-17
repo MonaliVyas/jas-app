@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 
-const user_controller = require('../controllers/user.controller');
-
-router.get('/', user_controller.selectUser);
+const user_controller = require('../controller/user.controller');
 
 router.post('/', user_controller.insertUser);
 
 router.get('/:userId', user_controller.selectUserByID);
+
+router.get('/', user_controller.selectUser);
 
 router.put('/:userId', user_controller.updateUserByID);
 

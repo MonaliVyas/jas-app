@@ -2,135 +2,131 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const Joi = require('joi');
 const User = require('../model/user.model');
+const CustomError = require('../../global/CustomError');
 let DOB = new Date();
 DOB.setFullYear(DOB.getFullYear() - 16);
-//db insert user
+
 const schema = Joi.object().keys({
     FirstName: Joi.string().min(2).max(30).required().messages({
-		'string.min': `First name must be at least 2 characters long`,
-		'string.max': `First name must be less than or equal to 30 characters long`,
-		'string.required': `First name is required`
-	}),
+        'string.min': `First name must be at least 2 characters long`,
+        'string.max': `First name must be less than or equal to 30 characters long`,
+        'string.required': `First name is required`
+    }),
     LastName: Joi.string().min(2).max(30).required().messages({
-		'string.min': `Last name must be at least 2 characters long`,
-		'string.max': `Last name must be less than or equal to 30 characters long`,
-		'string.required': `Last name is required`
-	}),
+        'string.min': `Last name must be at least 2 characters long`,
+        'string.max': `Last name must be less than or equal to 30 characters long`,
+        'string.required': `Last name is required`
+    }),
     Gender: Joi.string().required().messages({
-		'string.required': `Gender is required`
-	}),
+        'string.required': `Gender is required`
+    }),
     DOB: Joi.date().max(DOB).required().messages({
-		'date.max': `User must be 16 years old or above`,
-		'date.required': `Date of birth is required`
-	}),
+        'date.max': `User must be 16 years old or above`,
+        'date.required': `Date of birth is required`
+    }),
     Email: Joi.string().regex(/^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$/).max(255).required().messages({
         'string.pattern.base': `Invalid email address`,
         'string.max': `Email must be less than or equal to 255 characters long`,
         'string.required': `Email address is required`
-	}),
+    }),
     Mobile: Joi.string().regex(/^[0-9]{10,10}$/).required().messages({
         'string.pattern.base': `Invalid mobile number`,
         'string.required': `Mobile number is required`
-	}),
+    }),
     Role: Joi.number().required().messages({
-		'string.required': `Role is required`
-	}),
+        'string.required': `Role is required`
+    }),
     IsActive: Joi.boolean(),
     CreatedBy: Joi.number(),
     CreatedDate: Joi.date(),
     ModifiedBy: Joi.number(),
-	ModifiedDate: Joi.date()
+    ModifiedDate: Joi.date()
 });
-const insertUser = async (request, response) => {
-	const user = new User(request.body);
-    try{
-        const result = schema.validate(user, {abortEarly: false});
-            console.log(result);
-			response.status(400).send({
-              message: result
-          })
-    }catch(ex){
-        response.status(500).send({
-		message: ex});
+ 
+//db insert user
+const insertUser = (request, response) => {
+    let reqBody = request.body;
+    let user = new User(reqBody);
+    let result = schema.validate(reqBody, { abortEarly: false });
+
+    if (!result.error) {
+        user.save().then(data => {
+            response.status(200).send({ message: "Record inserted successfully" })
+        })
+        .catch(error => {
+            response.status(500).send({ message: error.message || "Some error occured while inserting the user." })
+        })
+    } else {
+        // let error = new Error(result).status(400);
+        response.status(400).send({ message: result })
     }
-	console.log("Insert User");
-	console.log(user);
-    //  user.save().then(result => {
-    //      response.status(200).send({
-    //          message: "Record inserted successfully"
-    //      })
-    //  }).catch(error => {
-    //      response.status(500).send({
-    //          message: error.message || "some error occured while inserting the record."
-    //      })
-    //  })
 }
 
 //db update user
 const updateUserByID = (request, response) => {
-	console.log(request.body);
-    User.update({ _id: request.params.userId}, {
-        $set: request.body
-    }).then(result => {
-        response.status(200).send({
-            message: "Record updated successfully."
-        })
-    }).catch(error => {
-        response.status(500).send({
-            message: error.message || "some error occured while inserting the record."
-        })
-    });
+    let reqBody = request.body;
+    let result = schema.validate(reqBody, { abortEarly: false });
+    let userId = request.params.userId;
+    
+    if (!result.error) {
+        User.update({ _id: userId }, {
+            $set: reqBody
+        }).then(data => {
+            if(data){
+                response.status(200).send({ message: "Record updated successfully." });
+            }
+            else response.status(404).send({ message: "Not found User with id " + userId });
+        }).catch(error => {
+            response.status(500).send({ message: error.message || "Error updating User with id" + userId });
+        });
+    } else{
+        response.status(400).send({ message: result });
+    } 
 }
 
 //db delete user
 const deleteUserByID = (request, response) => {
-    User.deleteOne({_id: request.params.userId}).then(result => {
-        response.status(200).send({
-            message: "Record deleted successfully"
-        })
+    let userId = request.params.userId
+
+    User.deleteOne({ _id: userId }).then(data => {
+        if (data) {
+            response.status(200).send({ message: "Record deleted successfully" });
+        }
+        else response.status(404).send({ message: "Not found User with id " + userId });
     }).catch(error => {
-        response.status(500).send({
-            message: error.message || "some error occured while deleting the record."
-        })
+        response.status(500).send({ message: error.message || "Error deleting User with id " + userId })
     });
 }
 
 //db select user
-const selectUser = (request, response) => {
-	
-    User.find().then(users => {
-        if (!users) {
-            response.status(404).send({
-                message: "No data found "
-            });
-            retrun;
-        }
-		console.log("Get all users")
-        response.status(200).send(users);
-    }).catch(error => {
-        response.status(500).send({
-            message: err.message || "Some error occurred while creating the Note."
-        })
-    });
+const selectUser = (request, response, next) => {
+    try{
+        User.find().then(data => {
+            if (data) {
+                response.status(200).send(data);
+            }
+            else next( new CustomError('', 404, 'No data found'))
+            // response.status(404).send({ message: "No data found " });
+        }).catch(err => {
+            next(new CustomError(err, 500, "Some error occurred while retrieving Users"));
+            // response.status(500).send({ message: err.message || "Some error occurred while retrieving Users" })
+        });
+    }catch(err){
+        next(new CustomError(err,500, "Internal server error"));
+    }
 }
 
 //db select user by ID
 const selectUserByID = (request, response) => {
-		console.log(request.params.userId+'request.params.id')
-    User.findById(request.params.userId).then(user => {
-		console.log(user)
-		console.log('API Select by id')
-        if (!user) {
-            response.status(404).send({
-                message: "No data found "
-            });
-            retrun;
+    let userId = request.params.userId;
+
+    User.findById(request.params.userId).then(data => {
+        if (data) {
+            response.status(200).send(data);
         }
-        response.status(200).send(user);
+        else response.status(404).send({ message: "Not found User with id " + userId });
     }).catch(error => {
-        response.status(500).send({
-            message: error.message || "Some error occurred while creating the Note."
-        })
+        response.status(500).send({ message: error.message || "Error retrieving User with id " + userId })
     });
 }
 
