@@ -42,92 +42,115 @@ const schema = Joi.object().keys({
     ModifiedBy: Joi.number(),
     ModifiedDate: Joi.date()
 });
- 
+
 //db insert user
 const insertUser = (request, response) => {
-    let reqBody = request.body;
-    let user = new User(reqBody);
-    let result = schema.validate(reqBody, { abortEarly: false });
+    try {
+        let reqBody = request.body;
+        let user = new User(reqBody);
+        let result = schema.validate(reqBody, { abortEarly: false });
 
-    if (!result.error) {
-        user.save().then(data => {
-            response.status(200).send({ message: "Record inserted successfully" })
-        })
-        .catch(error => {
-            response.status(500).send({ message: error.message || "Some error occured while inserting the user." })
-        })
-    } else {
-        // let error = new Error(result).status(400);
-        response.status(400).send({ message: result })
+        if (!result.error) {
+            user.save().then(data => {
+                response.status(200).send({ message: "Record inserted successfully" })
+            }).catch(error => {
+                next(new CustomError(err, 500, 'Some error occured while inserting the user'));
+                // response.status(500).send({ message: error.message || "Some error occured while inserting the user." })
+                });
+        } else {
+            next(new CustomError(err, 400, result));
+            // response.status(400).send({ message: result })
+        }
+    } catch (err) {
+        next(new CustomError(err, 500, "Internal server error"))
     }
 }
 
 //db update user
 const updateUserByID = (request, response) => {
-    let reqBody = request.body;
-    let result = schema.validate(reqBody, { abortEarly: false });
-    let userId = request.params.userId;
-    
-    if (!result.error) {
-        User.update({ _id: userId }, {
-            $set: reqBody
-        }).then(data => {
-            if(data){
-                response.status(200).send({ message: "Record updated successfully." });
-            }
-            else response.status(404).send({ message: "Not found User with id " + userId });
-        }).catch(error => {
-            response.status(500).send({ message: error.message || "Error updating User with id" + userId });
-        });
-    } else{
-        response.status(400).send({ message: result });
-    } 
+    try {
+        let reqBody = request.body;
+        let result = schema.validate(reqBody, { abortEarly: false });
+        let userId = request.params.userId;
+
+        if (!result.error) {
+            User.update({ _id: userId }, {
+                $set: reqBody
+            }).then(data => {
+                if (data) {
+                    response.status(200).send({ message: "Record updated successfully." });
+                }
+                else next(new CustomError('', 404, 'User not found'))
+                // response.status(404).send({ message: "Not found User with id " + userId });
+            }).catch(error => {
+                next(new CustomError(err, 500, 'Some error occured while updating the user'));
+                // response.status(500).send({ message: error.message || "Error updating User with id" + userId });
+            });
+        } else {
+            next(new CustomError(err, 400, result));
+            // response.status(400).send({ message: result });
+        }
+    } catch (err) {
+        next(new CustomError(err, 500, "Internal server error"))
+    }
 }
 
 //db delete user
 const deleteUserByID = (request, response) => {
-    let userId = request.params.userId
+    try {
+        let userId = request.params.userId
 
-    User.deleteOne({ _id: userId }).then(data => {
-        if (data) {
-            response.status(200).send({ message: "Record deleted successfully" });
-        }
-        else response.status(404).send({ message: "Not found User with id " + userId });
-    }).catch(error => {
-        response.status(500).send({ message: error.message || "Error deleting User with id " + userId })
-    });
+        User.deleteOne({ _id: userId }).then(data => {
+            if (data) {
+                response.status(200).send({ message: "Record deleted successfully" });
+            }
+            else next(new CustomError('', 404, 'User not found')) 
+            // response.status(404).send({ message: "Not found User with id " + userId });
+        }).catch(error => {
+            next(new CustomError(err, 500, "Some error occurred while deleting the user"));
+            // response.status(500).send({ message: error.message || "Error deleting User with id " + userId })
+        });
+    } catch (err) {
+        next(new CustomError(err, 500, "Internal server error"))
+    }
 }
 
 //db select user
 const selectUser = (request, response, next) => {
-    try{
+    try {
         User.find().then(data => {
             if (data) {
                 response.status(200).send(data);
             }
-            else next( new CustomError('', 404, 'No data found'))
+            else next(new CustomError('', 404, 'No data found'))
             // response.status(404).send({ message: "No data found " });
         }).catch(err => {
-            next(new CustomError(err, 500, "Some error occurred while retrieving Users"));
+            next(new CustomError(err, 500, "Some error occurred while retrieving the users"));
             // response.status(500).send({ message: err.message || "Some error occurred while retrieving Users" })
         });
-    }catch(err){
-        next(new CustomError(err,500, "Internal server error"));
+    } catch (err) {
+        next(new CustomError(err, 500, "Internal server error"));
     }
 }
 
 //db select user by ID
 const selectUserByID = (request, response) => {
-    let userId = request.params.userId;
+    try {
+        let userId = request.params.userId;
 
-    User.findById(request.params.userId).then(data => {
-        if (data) {
-            response.status(200).send(data);
-        }
-        else response.status(404).send({ message: "Not found User with id " + userId });
-    }).catch(error => {
-        response.status(500).send({ message: error.message || "Error retrieving User with id " + userId })
-    });
+        User.findById(request.params.userId).then(data => {
+            if (data) {
+                response.status(200).send(data);
+            }
+            else next(new CustomError('', 404, 'User not found')) 
+            // response.status(404).send({ message: "Not found User with id " + userId }); 
+        }).catch(error => {
+            next(new CustomError(err, 500, "Some error occurred while retrieving the user"));
+            // response.status(500).send({ message: error.message || "Error retrieving User with id " + userId })
+        });
+    } catch (err) {
+        next(new CustomError(err, 500, "Internal server error"))
+    }
 }
 
 exports.insertUser = insertUser;

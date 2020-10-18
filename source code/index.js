@@ -12,6 +12,7 @@ app.use(express.json());
 // const item = require('./Item/route/item.route');
 const user = require('./user/route/user.route');
 const CustomError = require('./global/CustomError');
+const Logger = require('./global/Logger');
 mongoose.set('useUnifiedTopology',true);
 
 //app.use('/',bill);
@@ -30,7 +31,13 @@ mongoose.connect('mongodb://localhost/jas_dev',{useNewUrlParser: true})
 .then(() => console.log('Connect to mongo...'))
 .catch(err => console.log('Could not connect to mongo ',err));
 
-app.use(function(err, request, response, next){
-    err.printError();
-    response.status(err.httpStatus || 500).send({ message: err.message || err.customMsg || "Some error occurred while retrieving Users" })
+// app.use(function(err, request, response, next){
+//     err.printError();
+//     Logger(err);
+//     response.status(err.httpStatus || 500).send({ message: err.message || err.customMsg || "Some error occurred while retrieving Users" })
+// })
+
+process.on('uncaughtException', (error) => {
+    console.log('uncaughtException');
+    //is trusted?
 })
