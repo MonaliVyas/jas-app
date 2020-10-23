@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-//schema item
 const itemSchema = new mongoose.Schema({
     ItemNo: Number,
     Name: String,
@@ -13,5 +12,5 @@ const itemSchema = new mongoose.Schema({
     CreatedBy: Number
 });
 
-//class Item
+//class User
 module.exports = mongoose.model('Item', itemSchema);

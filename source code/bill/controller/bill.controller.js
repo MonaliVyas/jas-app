@@ -1,97 +1,108 @@
-const Bill = require('../model/bill.model');
 const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+
+const CustomError = require('../../global/CustomError');
+const Bill = require('../model/bill_db.model');
+const Bill_joi = require('../model/bill_joi.model');
+
 //db insert bill
-const insertBill = (request, response) => {
-    const bill = new Bill({
-        billno: 1,
-        challanNo: 1,
-        Price: 750,
-        CreatedBy: 1,
-        CreatedOn: '20/10/2019'
-    });
+const insertBill = (request, response, next) => {
+    try {
+        let reqBody = request.body;
+        let bill = new Bill(reqBody);
+        let result = Bill_joi.validate(reqBody, { abortEarly: false });
 
-    bill.save().then(result => {
-        response.status(200).send({
-            message: "Record inserted successfully"
-        })
-    }).catch(error => {
-        response.status(500).send({
-            message: error.message || "some error occured while inserting the record."
-        })
-    })
-
+        if (!result.error) {
+            bill.save().then(data => {
+                response.status(200).send({ message: "Record inserted successfully" })
+            }).catch(err => {
+                next(new CustomError(err, 500, 'Some error occured while inserting the bill'));
+                });
+        } else {
+            next(new CustomError('', 400, result));
+        }
+    } catch (err) {
+        next(new CustomError(err, 500, "Internal server error"))
+    }
 }
 
 //db update bill
-const updateBillByID = (request, response) => {
+const updateBillByID = (request, response, next) => {
+    try {
+        let reqBody = request.body;
+        let result = Bill_joi.validate(reqBody, { abortEarly: false });
+        let billId = request.params.billId;
 
-    Bill.update({ _id: request.params.billId }, {
-        $set: {
-            billno: 1,
-            challanNo: 2,
-            Price: 1000,
-            CreatedBy: 1,
-            CreatedOn: '20/10/2019'
+        if (!result.error) {
+            Bill.update({ _id: billId }, {
+                $set: reqBody
+            }).then(data => {
+                if (data) {
+                    response.status(200).send({ message: "Record updated successfully." });
+                }
+                else next(new CustomError('', 404, 'Bill not found'))
+            }).catch(err => {
+                next(new CustomError(err, 500, 'Some error occured while updating the bill'));
+            });
+        } else {
+            next(new CustomError('', 400, result));
         }
-    }).then(result => {
-        response.status(200).send({
-            message: "Record updated successfully."
-        })
-    }).catch(error => {
-        response.status(500).send({
-            message: error.message || "some error occured while inserting the record."
-        })
-    });
-
+    } catch (err) {
+        next(new CustomError(err, 500, "Internal server error"))
+    }
 }
 
 //db delete bill
-const deleteBillByID = (request, response) => {
-    Bill.deleteOne({ _id: request.params.billId }).then(result => {
-        response.status(200).send({
-            message: "Record deleted successfully"
-        })
-    }).catch(error => {
-        response.status(500).send({
-            message: error.message || "some error occured while deleting the record."
-        })
-    });
+const deleteBillByID = (request, response, next) => {
+    try {
+        let billId = request.params.billId
+
+        Bill.deleteOne({ _id: billId }).then(data => {
+            if (data) {
+                response.status(200).send({ message: "Record deleted successfully" });
+            }
+            else next(new CustomError('', 404, 'Bill not found')) 
+        }).catch(err => {
+            next(new CustomError(err, 500, "Some error occurred while deleting the bill"));
+        });
+    } catch (err) {
+        next(new CustomError(err, 500, "Internal server error"))
+    }
 }
 
 //db select bill
-const selectBill = (request, response) => {
-    Bill.find().then(bills => {
-        if (!bills) {
-            response.status(404).send({
-                message: "No data found "
-            });
-            retrun;
-        }
-        response.status(200).send(bills);
-    }).catch(error => {
-        response.status(500).send({
-            message: err.message || "Some error occurred while creating the Note."
-        })
-    });
+const selectBill = (request, response, next) => {
+    try {
+        Bill.find().then(data => {
+            if (data) {
+                response.status(200).send(data);
+            }
+            else next(new CustomError('', 404, 'No data found'))
+        }).catch(err => {
+            next(new CustomError(err, 500, "Some error occurred while retrieving the bills"));
+        });
+    } catch (err) {
+        next(new CustomError(err, 500, "Internal server error"));
+    }
 }
 
 //db select bill by ID
-const selectBillByID = (request, response) => {
-    //console.log('1');
-    console.log(request.params.billId);
-    Bill.findById(request.params.billId).then(bill => {
-        if (!bill) {
-            response.status(404).send({
-                message: "No data found "
-            });
-            retrun;
-        }
-        response.status(200).send(bill);
-    }).catch(error => {
-        response.status(500).send({
-            message: error.message || "Some error occurred while creating the Note."
-        })
-    });
+const selectBillByID = (request, response, next) => {
+    // abc();
+    try {
+        let billId = request.params.billId;
+
+        Bill.findById(request.params.billId).then(data => {
+            if (data) {
+                response.status(200).send(data);
+            }
+            else next(new CustomError('', 404, 'Bill not found'));
+        }).catch(err => {
+            next(new CustomError(err, 500, "Some error occurred while retrieving the bill"));
+        });
+    } catch (err) {
+        next(new CustomError(err, 500, "Internal server error"));
+    }
 }
 
 exports.insertBill = insertBill;

@@ -1,166 +1,109 @@
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-const Joi = require('joi');
 
-const Company = require('../model/company.model');
+const CustomError = require('../../global/CustomError');
+const Company = require('../model/company_db.model');
+const Company_joi = require('../model/company_joi.model');
 
-const schema = Joi.object().keys({
-    Name: Joi.string().min(2).max(255).required().messages({
-        'string.min': `Name must be at least 2 characters long`,
-		'string.max': `Name must be less than or equal to 255 characters long`,
-		'string.required': `Name is required`
-    }),
-    CompanyCode: Joi.string().min(2).max(10).allow("").messages({
-        'string.min': `Company code must be at least 2 characters long`,
-		'string.max': `Company code must be less than or equal to 10 characters long`,
-		'string.required': `Company code is required`
-    }),
-    Email: Joi.string().regex(/^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$/).max(255).required().messages({
-        'string.pattern.base': `Invalid email address`,
-        'string.max': `Email must be less than or equal to 255 characters long`,
-        'string.required': `Email address is required`
-    }),
-    Phone: Joi.string().regex(/^[0-9]{10,10}$/).required().messages({
-        'string.pattern.base': `Invalid phone number`,
-        'string.required': `Phone number is required`
-    }),
-    Address: Joi.string().max(255).allow("").messages({
-        'string.max': `Address must be less than or equal to 255 characters long`
-    }),
-    GSTIN: Joi.string().regex(/\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}/).required().messages({
-        'string.pattern.base': `Invalid GSTIN`,
-        'string.required': `GSTIN is required`
-    }),
-    CreatedBy: Joi.number(),
-    CreatedDate: Joi.date(),
-    ModifiedBy: Joi.number(),
-	ModifiedDate: Joi.date()
-})
 //db insert company
-const insertCompany = (request, response) => {
-    // const company = new Company({
-    //     name: 'KHS',
-    //     code: '123',
-    //     email: 'kvyas@khs.com',
-    //     phone: 1234567890,
-    //     address: 'Motera',
-    //     GSTNo: '123456789asdrfgty',
-    //     ValidTo: '20/12/2019',
-    //     ValidFrom: '22/12/2019',
-    //     CreatedBy: 1,
-    //     CreatedOn: '20/12/2019'
-    // });
-    
-    try{
-        const result = schema.validate(request.body,  {abortEarly: false});
-        console.log(result);
-        const company = new Company(request.body);
-        console.log(company);
-        if (result){
-            // console.log(result);
-            response.status(500).send({
-                message: result
-            })
-            // company.save().then(result => {
-            //     response.status(200).send({
-            //         message: "Record inserted successfully"
-            //     })
-            // }).catch(error => {
-            //     response.status(500).send({
-            //         message: error.message || "Some error occured while inserting the record."
-            //     })
-            // })
-        }else{
-            console.log(result);
-        }
-    }catch(ex){
-console.log(result);
-    }
+const insertCompany = (request, response, next) => {
+    try {
+        let reqBody = request.body;
+        let company = new Company(reqBody);
+        let result = Company_joi.validate(reqBody, { abortEarly: false });
 
-    // company.save().then(result => {
-    //     response.status(200).send({
-    //         message: "Record inserted successfully"
-    //     })
-    // }).catch(error => {
-    //     response.status(500).send({
-    //         message: error.message || "some error occured while inserting the record."
-    //     })
-    // })
+        if (!result.error) {
+            company.save().then(data => {
+                response.status(200).send({ message: "Record inserted successfully" })
+            }).catch(err => {
+                next(new CustomError(err, 500, 'Some error occured while inserting the company'));
+                });
+        } else {
+            next(new CustomError('', 400, result));
+        }
+    } catch (err) {
+        next(new CustomError(err, 500, "Internal server error"))
+    }
 }
 
 //db update company
-const updateCompanyByID = (request, response) => {
-    Company.update({ _id: request.params.companyId}, {
-        $set: {
-            name: 'Inspiron',
-            code: '111',
-            email: 'abc@insp.com',
-            phone: 1234567890,
-            address: 'xxx',
-            GSTNo: '223456789asdrfgty',
-            ValidTo: '20/12/2019',
-            ValidFrom: '22/12/2019',
-            CreatedBy: 1,
-            CreatedOn: '20/12/2019'
+const updateCompanyByID = (request, response, next) => {
+    try {
+        let reqBody = request.body;
+        let result = Company_joi.validate(reqBody, { abortEarly: false });
+        let companyId = request.params.companyId;
+
+        if (!result.error) {
+            Company.update({ _id: companyId }, {
+                $set: reqBody
+            }).then(data => {
+                if (data) {
+                    response.status(200).send({ message: "Record updated successfully." });
+                }
+                else next(new CustomError('', 404, 'Company not found'))
+            }).catch(err => {
+                next(new CustomError(err, 500, 'Some error occured while updating the company'));
+            });
+        } else {
+            next(new CustomError('', 400, result));
         }
-    }).then(result => {
-        response.status(200).send({
-            message: "Record updated successfully."
-        })
-    }).catch(error => {
-        response.status(500).send({
-            message: error.message || "some error occured while inserting the record."
-        })
-    });
+    } catch (err) {
+        next(new CustomError(err, 500, "Internal server error"))
+    }
 }
 
 //db delete company
-const deleteCompanyByID = (request, response) => {
-    Company.deleteOne({_id: request.params.companyId}).then(result => {
-        response.status(200).send({
-            message: "Record deleted successfully"
-        })
-    }).catch(error => {
-        response.status(500).send({
-            message: error.message || "some error occured while deleting the record."
-        })
-    });
+const deleteCompanyByID = (request, response, next) => {
+    try {
+        let companyId = request.params.companyId
+
+        Company.deleteOne({ _id: companyId }).then(data => {
+            if (data) {
+                response.status(200).send({ message: "Record deleted successfully" });
+            }
+            else next(new CustomError('', 404, 'Company not found')) 
+        }).catch(err => {
+            next(new CustomError(err, 500, "Some error occurred while deleting the company"));
+        });
+    } catch (err) {
+        next(new CustomError(err, 500, "Internal server error"))
+    }
 }
 
 //db select company
-const selectCompany = (request, response) => {
-    Company.find().then(companys => {
-        if (!companys) {
-            response.status(404).send({
-                message: "No data found "
-            });
-            retrun;
-        }
-        response.status(200).send(companys);
-    }).catch(error => {
-        response.status(500).send({
-            message: err.message || "Some error occurred while creating the Note."
-        })
-    });
+const selectCompany = (request, response, next) => {
+    try {
+        Company.find().then(data => {
+            if (data) {
+                response.status(200).send(data);
+            }
+            else next(new CustomError('', 404, 'No data found'))
+        }).catch(err => {
+            next(new CustomError(err, 500, "Some error occurred while retrieving the companies"));
+        });
+    } catch (err) {
+        next(new CustomError(err, 500, "Internal server error"));
+    }
 }
 
 //db select company by ID
-const selectCompanyByID = (request, response) => {
-    Company.findById(request.params.companyId).then(company => {
-        if (!company) {
-            response.status(404).send({
-                message: "No data found "
-            });
-            retrun;
-        }
-        response.status(200).send(company);
-    }).catch(error => {
-        response.status(500).send({
-            message: error.message || "Some error occurred while creating the Note."
-        })
-    });
-}
+const selectCompanyByID = (request, response, next) => {
+    // abc();
+    try {
+        let companyId = request.params.companyId;
 
+        Company.findById(request.params.companyId).then(data => {
+            if (data) {
+                response.status(200).send(data);
+            }
+            else next(new CustomError('', 404, 'Company not found'));
+        }).catch(err => {
+            next(new CustomError(err, 500, "Some error occurred while retrieving the company"));
+        });
+    } catch (err) {
+        next(new CustomError(err, 500, "Internal server error"));
+    }
+}
 
 exports.selectCompany = selectCompany;
 exports.insertCompany = insertCompany;

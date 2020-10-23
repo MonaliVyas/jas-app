@@ -1,5 +1,6 @@
 class CustomError {
     constructor(err = '', httpStatus = 0, customMsg = "") {
+        this.exceptionDatetime = new Date().toISOString();
         this.message = err.message || '';
         this.name = err.name || '';
         this.stack = err.stack || '';
@@ -8,6 +9,7 @@ class CustomError {
     }
 
     printError() {
+        console.log(this.exceptionDatetime);
         console.log("Error Message")
         console.log(this.message);
         console.log("Error Name")
