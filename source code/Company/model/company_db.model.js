@@ -2,11 +2,11 @@ const mongoose = require('mongoose');
 
 //class schema
 const companySchema = new mongoose.Schema({
-    Name: String,
+    CompanyName: String,
     CompanyCode: String,
-    Email: String,
-    Phone: String,
-    Address: String,
+    CompanyEmail: String,
+    CompanyPhone: String,
+    CompanyAddress: String,
     GSTIN: String,
     CreatedBy: Number,
     CreatedDate: Date,

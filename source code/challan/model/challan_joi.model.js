@@ -1,27 +1,28 @@
 const Joi = require('joi');
 
 const schema = Joi.object().keys({
-    ItemNo: Joi.string().required().messages({
+    ChallanNo: Joi.number().required().messages({
 
     }),
-    Name: Joi.string().required().messages({
+    CompanyId: Joi.string().required().messages({
 
     }),
-    DrawingNo: Joi.string().required().messages({
+    Date: Joi.date().required().messages({
 
     }),
-    PartCode: Joi.string().required().messages({
-
+    Items: Joi.array().items({
+        ItemId: Joi.string().required().messages({
+    
+        }),
+        Price: Joi.number().required().messages({
+    
+        }),
+        Qty: Joi.number().required().messages({
+    
+        })  
     }),
-    Material: Joi.string().required().messages({
-
-    }),
-    Price: Joi.string().required().messages({
-
-    }),
-    ValidTo: Joi.date(),
-    ValidFrom: Joi.date(),
-    CreatedBy: Joi.number()
+    CreatedBy: Joi.number(),
+    CreatedOn: Joi.date()
 });
 
 module.exports = schema;

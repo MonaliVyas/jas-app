@@ -3,11 +3,14 @@ const mongoose = require('mongoose');
 //schema challan
 const challanSchema = new mongoose.Schema({
     ChallanNo: Number,
-    CompanyCode: String,
+    CompanyId: String,
     Date: Date,
-    Item: String,
-    Qty: Number,
-    CreatedBy: Int16Array,
+    Items: [{
+        ItemId: String,
+        Price: Number,
+        Qty: Number,
+    }],
+    CreatedBy: Number,
     CreatedOn: Date
 });
 

@@ -1,27 +1,26 @@
 const Joi = require('joi');
 
 const schema = Joi.object().keys({
-    ItemNo: Joi.string().required().messages({
+    BillNo: Joi.number().required().messages({
 
     }),
-    Name: Joi.string().required().messages({
+    ChallanNo: Joi.number().equal(Joi.ref(BillNo)).required().messages({
+        
+    }),
+    ChallanNo: Joi.number().required().valid(Joi.ref(BillNo)).options({
+        language: {
+            any: {
+              allowOnly: '!!initial amount do not match',
+            }
+          } 
+    }).messages({
 
     }),
-    DrawingNo: Joi.string().required().messages({
+    BillAmount: Joi.number().required().messages({
 
     }),
-    PartCode: Joi.string().required().messages({
-
-    }),
-    Material: Joi.string().required().messages({
-
-    }),
-    Price: Joi.string().required().messages({
-
-    }),
-    ValidTo: Joi.date(),
-    ValidFrom: Joi.date(),
-    CreatedBy: Joi.number()
+    CreatedBy: Joi.number(),
+    CreatedOn: Joi.date()
 });
 
 module.exports = schema;
